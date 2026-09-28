@@ -6,7 +6,8 @@ export TMUX_POWERLINE_DIR_HOME
 # shellcheck source=lib/headers.sh
 source "${TMUX_POWERLINE_DIR_HOME}/lib/headers.sh"
 
-if ! tp_powerline_muted "$1"; then
+# powerline-cached.sh has already done the mute check (without a tmux round-trip).
+if [ -n "$TMUX_POWERLINE_SKIP_MUTE_CHECK" ] || ! tp_powerline_muted "$1"; then
 	tp_process_settings
 	tp_check_arg_segment "$1"
 	if [ "$1" == "window-current-format" ]; then
