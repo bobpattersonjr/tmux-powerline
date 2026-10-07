@@ -27,8 +27,9 @@ tmux set-option -g message-style "$TMUX_POWERLINE_STATUS_STYLE"
 tmux set-option -g status-left-length "$TMUX_POWERLINE_STATUS_LEFT_LENGTH"
 tmux set-option -g status-right-length "$TMUX_POWERLINE_STATUS_RIGHT_LENGTH"
 
-tmux set-option -g status-left "#(${TMUX_POWERLINE_DIR_HOME}/powerline.sh left)"
-tmux set-option -g status-right "#(${TMUX_POWERLINE_DIR_HOME}/powerline.sh right)"
+# Rendered at most once per TMUX_POWERLINE_CACHE_TTL and shared by all clients.
+tmux set-option -g status-left "#(${TMUX_POWERLINE_DIR_HOME}/powerline-cached.sh left #{q:session_name})"
+tmux set-option -g status-right "#(${TMUX_POWERLINE_DIR_HOME}/powerline-cached.sh right #{q:session_name})"
 
 if [ "$TMUX_POWERLINE_STATUS_VISIBILITY" = "2" ]; then
 	# handle TMUX_POWERLINE_WINDOW_STATUS_LINE=0 and fallback for misconfiguration
@@ -44,8 +45,10 @@ if [ "$TMUX_POWERLINE_STATUS_VISIBILITY" = "2" ]; then
 	tmux set-option -ag status-format["$left_right_status"] "${TMUX_POWERLINE_STATUS_FORMAT_RIGHT:-${TMUX_POWERLINE_STATUS_FORMAT_RIGHT_DEFAULT}}"
 fi
 
-tmux set-option -g window-status-current-format "#(${TMUX_POWERLINE_DIR_HOME}/powerline.sh window-current-format)"
-tmux set-option -g window-status-format "#(${TMUX_POWERLINE_DIR_HOME}/powerline.sh window-format)"
+# The window formats are static strings (tmux fills in #I, #W, #F itself), so render
+# them once here instead of spawning powerline.sh for every window of every client.
+tmux set-option -g window-status-current-format "$(TMUX_POWERLINE_SKIP_MUTE_CHECK=1 "${TMUX_POWERLINE_DIR_HOME}/powerline.sh" window-current-format)"
+tmux set-option -g window-status-format "$(TMUX_POWERLINE_SKIP_MUTE_CHECK=1 "${TMUX_POWERLINE_DIR_HOME}/powerline.sh" window-format)"
 tmux set-option -g window-status-separator "$TMUX_POWERLINE_WINDOW_STATUS_SEPARATOR"
 
 if [ -n "$TMUX_POWERLINE_MUTE_LEFT_KEYBINDING" ]; then
