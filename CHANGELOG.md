@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `TMUX_POWERLINE_STACK_BELOW_WIDTH`: automatically switch to the dual-line status bar for clients narrower than the given number of columns, and back to a single line when wider.
+
 ## [3.3.0] - 2026-10-02
 
 ### Added

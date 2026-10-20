@@ -28,6 +28,10 @@ tp_process_settings() {
 		export TMUX_POWERLINE_STATUS_VISIBILITY="${TMUX_POWERLINE_STATUS_VISIBILITY_DEFAULT}"
 	fi
 
+	if [ -z "$TMUX_POWERLINE_STACK_BELOW_WIDTH" ]; then
+		export TMUX_POWERLINE_STACK_BELOW_WIDTH="${TMUX_POWERLINE_STACK_BELOW_WIDTH_DEFAULT}"
+	fi
+
 	if [ -z "$TMUX_POWERLINE_STATUS_INTERVAL" ]; then
 		export TMUX_POWERLINE_STATUS_INTERVAL="${TMUX_POWERLINE_STATUS_INTERVAL_DEFAULT}"
 	fi
@@ -119,6 +123,9 @@ tp_generate_default_config() {
 	# In case of visibility = 2, where to display window status and where left/right status bars.
 	# 0: window status top, left/right status bottom; 1: window status bottom, left/right status top
 	export TMUX_POWERLINE_WINDOW_STATUS_LINE=0
+	# Switch to the two-line layout above for clients narrower than this many columns, and back to one line otherwise.
+	# Empty disables it. The layout is per session, so with several clients on one session the last resized one wins.
+	export TMUX_POWERLINE_STACK_BELOW_WIDTH="${TMUX_POWERLINE_STACK_BELOW_WIDTH_DEFAULT}"
 	# The status bar refresh interval in seconds.
 	# Note that events that force-refresh the status bar (such as window renaming) will ignore this.
 	export TMUX_POWERLINE_STATUS_INTERVAL="${TMUX_POWERLINE_STATUS_INTERVAL_DEFAULT}"
