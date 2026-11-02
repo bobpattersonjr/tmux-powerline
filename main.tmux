@@ -48,34 +48,6 @@ if [ "$TMUX_POWERLINE_STATUS_VISIBILITY" = "2" ]; then
 	tmux set-option -g status-format[1] "$status_format_1"
 fi
 
-# Width-based stacking: hooks call stack_status.sh, which overrides status/status-format
-# per session. Start from a clean slate so a reload picks up new formats or a disabled setting.
-for stack_hook in client-attached client-resized client-session-changed; do
-	tmux set-hook -gu "${stack_hook}[${TMUX_POWERLINE_STACK_HOOK_INDEX}]"
-done
-tmux list-sessions -F '#{session_id}' -f '#{@tmux_powerline_stacked}' | while read -r stacked_session; do
-	tmux set-option -t "$stacked_session" -u status \; \
-		set-option -t "$stacked_session" -u status-format \; \
-		set-option -t "$stacked_session" -u @tmux_powerline_stacked
-done
-tmux set-option -gu @tmux_powerline_stack_below_width
-
-if [[ "$TMUX_POWERLINE_STACK_BELOW_WIDTH" =~ ^[0-9]+$ ]]; then
-	tmux set-option -g @tmux_powerline_stack_below_width "$TMUX_POWERLINE_STACK_BELOW_WIDTH"
-	tmux set-option -g @tmux_powerline_status_format_0 "$status_format_0"
-	tmux set-option -g @tmux_powerline_status_format_1 "$status_format_1"
-	for stack_hook in client-attached client-resized client-session-changed; do
-		tmux set-hook -g "${stack_hook}[${TMUX_POWERLINE_STACK_HOOK_INDEX}]" \
-			"run-shell -b \"'${TMUX_POWERLINE_DIR_HOME}/stack_status.sh' '#{session_id}' '#{client_width}'\""
-	done
-	# Apply to clients that are already attached.
-	tmux list-clients -F '#{session_id} #{client_width}' | while read -r client_session client_width; do
-		"${TMUX_POWERLINE_DIR_HOME}/stack_status.sh" "$client_session" "$client_width"
-	done
-elif [ -n "$TMUX_POWERLINE_STACK_BELOW_WIDTH" ]; then
-	tmux display-message "tmux-powerline: TMUX_POWERLINE_STACK_BELOW_WIDTH must be a number, got '${TMUX_POWERLINE_STACK_BELOW_WIDTH}'"
-fi
-
 # The window formats are static strings (tmux fills in #I, #W, #F itself), so render
 # them once here instead of spawning powerline.sh for every window of every client.
 tmux set-option -g window-status-current-format "$(TMUX_POWERLINE_SKIP_MUTE_CHECK=1 "${TMUX_POWERLINE_DIR_HOME}/powerline.sh" window-current-format)"
@@ -88,4 +60,36 @@ fi
 
 if [ -n "$TMUX_POWERLINE_MUTE_RIGHT_KEYBINDING" ]; then
 	tmux bind "$TMUX_POWERLINE_MUTE_RIGHT_KEYBINDING" run "$TMUX_POWERLINE_DIR_HOME/mute_powerline.sh right"
+fi
+
+# Width-based stacking: hooks call stack_status.sh, which overrides status/status-format
+# per session. Start from a clean slate so a reload picks up new formats or a disabled setting.
+# Kept last and best-effort: when the server is starting (tpm runs us from tmux.conf before
+# any session exists) list-sessions/list-clients can fail with "no current target", and under
+# errexit/pipefail that must not abort the script before the core status bar is configured.
+for stack_hook in client-attached client-resized client-session-changed; do
+	tmux set-hook -gu "${stack_hook}[${TMUX_POWERLINE_STACK_HOOK_INDEX}]"
+done
+{ tmux list-sessions -F '#{session_id}' -f '#{@tmux_powerline_stacked}' 2>/dev/null || true; } | while read -r stacked_session; do
+	tmux set-option -t "$stacked_session" -u status \; \
+		set-option -t "$stacked_session" -u status-format \; \
+		set-option -t "$stacked_session" -u @tmux_powerline_stacked || true
+done
+tmux set-option -gu @tmux_powerline_stack_below_width
+
+if [[ "$TMUX_POWERLINE_STACK_BELOW_WIDTH" =~ ^[0-9]+$ ]]; then
+	tmux set-option -g @tmux_powerline_stack_below_width "$TMUX_POWERLINE_STACK_BELOW_WIDTH"
+	tmux set-option -g @tmux_powerline_status_format_0 "$status_format_0"
+	tmux set-option -g @tmux_powerline_status_format_1 "$status_format_1"
+	for stack_hook in client-attached client-resized client-session-changed; do
+		tmux set-hook -g "${stack_hook}[${TMUX_POWERLINE_STACK_HOOK_INDEX}]" \
+			"run-shell -b \"'${TMUX_POWERLINE_DIR_HOME}/stack_status.sh' '#{session_id}' '#{client_width}'\""
+	done
+	# Apply to clients that are already attached (none yet when the server is starting;
+	# the client-attached hook covers those).
+	{ tmux list-clients -F '#{session_id} #{client_width}' 2>/dev/null || true; } | while read -r client_session client_width; do
+		"${TMUX_POWERLINE_DIR_HOME}/stack_status.sh" "$client_session" "$client_width" || true
+	done
+elif [ -n "$TMUX_POWERLINE_STACK_BELOW_WIDTH" ]; then
+	tmux display-message "tmux-powerline: TMUX_POWERLINE_STACK_BELOW_WIDTH must be a number, got '${TMUX_POWERLINE_STACK_BELOW_WIDTH}'"
 fi

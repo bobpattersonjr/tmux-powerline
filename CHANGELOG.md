@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * `TMUX_POWERLINE_STACK_BELOW_WIDTH`: automatically switch to the dual-line status bar for clients narrower than the given number of columns, and back to a single line when wider.
 
+### Fixed
+
+* With `TMUX_POWERLINE_STACK_BELOW_WIDTH` set, main.tmux aborted on tmux server start (`no current target` from `list-clients`) before applying the theme's window formats, leaving tmux's default window list.
+
 ## [3.3.0] - 2026-10-02
 
 ### Added
